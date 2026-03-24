@@ -1,0 +1,18 @@
+# Ignore local dependencies to prevent cross-platform binary overwrites
+node_modules
+.pnp
+.pnp.js
+
+# Ignore build outputs
+dist
+dist-ssr
+build
+
+# Ignore environment files (should be passed via compose/secrets)
+.env
+.env.*
+!.env.example
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

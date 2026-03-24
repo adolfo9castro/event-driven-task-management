@@ -22,9 +22,22 @@ services:
     env_file:
       - .env
     ports:
-      - "${PORT}:${PORT}"
+      - "${API_PORT}:${API_PORT}"
     depends_on:
       - task-db
+  
+  task-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: task_web
+    ports:
+      - "${WEB_PORT}:${WEB_PORT}"
+    environment:
+      # Inject the API URL so Vite knows where to make requests
+      - VITE_API_URL=http://localhost:${API_PORT}/api/v1
+    depends_on:
+      - task-api
 
 volumes:
   mysql_data:

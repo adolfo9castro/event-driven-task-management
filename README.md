@@ -59,8 +59,11 @@ This project is fully containerized. No local Node.js or MySQL installation is r
    ```bash
    cp .env.example .env
    ```
-3. Start the infrastructure:
+3. Start the full infrastructure (Database, API, and Web UI):
    ```bash
    docker compose up --build -d
    ```
-4. The API will be available at `http://localhost:3000`.
+4. Access the applications:
+   * **Frontend UI::** http://localhost:5173
+   * **API / Swagger Docs::** http://localhost:3000/api/v1/docs
+   * **Health Check::** http://localhost:3000/api/v1/health
