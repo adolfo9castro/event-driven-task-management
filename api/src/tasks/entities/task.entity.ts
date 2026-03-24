@@ -31,10 +31,6 @@ export class Task {
     @Column({ type: 'text', nullable: true })
     description: string;
 
-    /** Expected completion timestamp */
-    @Column({ type: 'timestamp', nullable: true })
-    dueDate: Date;
-
     /** Current lifecycle stage of the task */
     @Column({
         type: 'enum',
@@ -42,6 +38,18 @@ export class Task {
         default: TaskStatus.PENDING,
     })
     status: TaskStatus;
+
+    /** Expected completion timestamp */
+    @Column({ type: 'timestamp', nullable: true })
+    dueDate: Date;
+
+    /** UUID of the user who created the task */
+    @Column({ type: 'uuid' })
+    creatorId: string;
+
+    /** UUID of the user assigned to complete the task */
+    @Column({ type: 'uuid', nullable: true })
+    assigneeId: string;
 
     /** Audit: Timestamp of record creation */
     @CreateDateColumn({ name: 'created_at' })

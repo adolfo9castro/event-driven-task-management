@@ -56,4 +56,11 @@ export class TasksController {
     remove(@Param('id', ParseUUIDPipe) id: string) {
         return this.tasksService.remove(id);
     }
+
+    @Post('reminders/trigger')
+    @ApiOperation({ summary: 'Manually trigger reminders for tasks due within 24h (SYS1)' })
+    @ApiResponse({ status: 200, description: 'Reminders successfully dispatched.' })
+    triggerReminders() {
+        return this.tasksService.triggerReminders();
+    }
 }

@@ -2,12 +2,15 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { LessThanOrEqual, Not } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskCreatedEvent } from './events/task-created.event';
 import { TaskUpdatedEvent } from './events/task-updated.event';
 import { TaskDeletedEvent } from './events/task-deleted.event';
+import { TaskStatus } from './entities/task.entity';
+import { TaskReminderEvent } from './events/task-reminder.event';
 
 /**
  * Core business logic layer for Task management.
@@ -116,5 +119,36 @@ export class TasksService {
             'task.deleted',
             new TaskDeletedEvent(id),
         );
+    }
+
+    /**
+   * Manually triggers reminder events for tasks due within the next 24 hours.
+   * Fulfills the SYS1 requirement for local testability.
+   *
+   * @returns An object containing the number of reminders dispatched.
+   */
+    async triggerReminders(): Promise<{ triggeredCount: number }> {
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24 hours
+
+        const tasksDueSoon = await this.taskRepository.find({
+            where: {
+                status: Not(TaskStatus.COMPLETED),
+                dueDate: LessThanOrEqual(tomorrow),
+                assigneeId: Not(''), // Only alert if assigned
+            },
+        });
+
+        for (const task of tasksDueSoon) {
+            if (task.assigneeId) {
+                this.eventEmitter.emit(
+                    'task.reminder',
+                    new TaskReminderEvent(task.id, task.assigneeId, task.title, task.dueDate),
+                );
+            }
+        }
+
+        this.logger.log(`Dispatched ${tasksDueSoon.length} task reminders.`);
+        return { triggeredCount: tasksDueSoon.length };
     }
 }
