@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 /**
@@ -30,6 +31,17 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Event-Driven Task Management API')
+    .setDescription('The core API for managing tasks and triggering asynchronous background events.')
+    .setVersion('1.0')
+    .addTag('Tasks')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  // Swagger UI will be available at /api/v1/docs
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

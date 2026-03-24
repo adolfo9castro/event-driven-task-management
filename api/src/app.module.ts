@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Task } from './tasks/entities/task.entity';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -23,10 +25,16 @@ import { Task } from './tasks/entities/task.entity';
         database: configService.get<string>('DB_NAME'),
         entities: [Task],
         synchronize: true, // Only for development/assessment purposes
-        logging: configService.get('NODE_ENV') === 'development', // Log queries in dev
-        logger: 'advanced-console', // More descriptive log format
+        logging: configService.get('NODE_ENV') === 'development',
+        logger: 'advanced-console',
       }),
     }),
+    EventEmitterModule.forRoot({
+      // Global configuration for the event emitter
+      wildcard: true,
+      delimiter: '.',
+    }),
+    TasksModule
   ],
   controllers: [AppController],
   providers: [AppService],
