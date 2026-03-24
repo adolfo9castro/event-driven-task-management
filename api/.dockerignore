@@ -1,0 +1,13 @@
+# Ignore local dependencies and builds
+node_modules
+dist
+artifacts
+
+# Ignore git and docker configs
+.git
+Dockerfile
+compose.yaml
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db

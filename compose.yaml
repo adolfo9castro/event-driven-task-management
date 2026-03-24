@@ -1,0 +1,30 @@
+services:
+  task-db:
+    image: mysql:8.0
+    container_name: task_db
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - ${DB_PORT}
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  task-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: task_api
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - task-db
+
+volumes:
+  mysql_data:

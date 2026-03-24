@@ -1,0 +1,51 @@
+# =========================
+# Dependencias (Backend & Frontend)
+# =========================
+node_modules/
+/.pnp
+.pnp.js
+
+# =========================
+# Builds y Compilados
+# =========================
+dist/
+build/
+out/
+.next/
+
+# =========================
+# Variables de Entorno y Seguridad
+# =========================
+.env
+.env.*
+!.env.example
+*.pem
+
+# =========================
+# Logs y Debugging
+# =========================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Infraestructura y Base de Datos local
+# =========================
+mysql_data/
+.data/
+.docker/
+
+# =========================
+# Sistema Operativo y Editores
+# =========================
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

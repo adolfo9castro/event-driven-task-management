@@ -1,0 +1,5 @@
+dist
+node_modules
+.data
+mysql_data
+pnpm-lock.yaml
