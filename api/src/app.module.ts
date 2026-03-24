@@ -23,7 +23,8 @@ import { Task } from './tasks/entities/task.entity';
         database: configService.get<string>('DB_NAME'),
         entities: [Task],
         synchronize: true, // Only for development/assessment purposes
-        logging: false,
+        logging: configService.get('NODE_ENV') === 'development', // Log queries in dev
+        logger: 'advanced-console', // More descriptive log format
       }),
     }),
   ],
