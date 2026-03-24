@@ -12,7 +12,7 @@ export class NotificationListener {
     private readonly logger = new Logger('MockEmailService');
 
     @OnEvent('task.created', { async: true })
-    handleTaskAssigned(event: TaskCreatedEvent & { assigneeId?: string }) {
+    handleTaskCreated(event: TaskCreatedEvent & { assigneeId?: string }) {
         // In a real scenario, we'd look up the user's email by assigneeId
         this.logger.log(`[EMAIL SENT] To Assignee ${event.taskId}: You have been assigned to task "${event.title}"`);
     }

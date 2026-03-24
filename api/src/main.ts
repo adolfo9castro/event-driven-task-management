@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 
@@ -13,13 +14,14 @@ import { HttpExceptionFilter } from './common/http-exception.filter';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   // Define global prefix for API versioning as per REST best practices
   app.setGlobalPrefix('api/v1');
 
   // Enable CORS for frontend integration (Web/Client)
   app.enableCors({
-    origin: true, // In production, replace with specific domain
+    origin: configService.get('CORS_ORIGIN'),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -50,11 +52,11 @@ async function bootstrap() {
   // Swagger UI will be available at /api/v1/docs
   SwaggerModule.setup('api/v1/docs', app, document);
 
-  const port = process.env.PORT || 3000;
+  const port = configService.get('PORT') || 3000;
   await app.listen(port);
 
   logger.log(`🚀 API is running on: http://localhost:${port}/api/v1`);
-  logger.log(`🛠️  Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.log(`🛠️  Environment: ${configService.get('NODE_ENV') || 'development'}`);
 }
 
 bootstrap();

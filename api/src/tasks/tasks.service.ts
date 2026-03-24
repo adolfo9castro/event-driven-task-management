@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { LessThanOrEqual, Not } from 'typeorm';
 import { Task } from './entities/task.entity';
@@ -135,7 +135,7 @@ export class TasksService {
             where: {
                 status: Not(TaskStatus.COMPLETED),
                 dueDate: LessThanOrEqual(tomorrow),
-                assigneeId: Not(''), // Only alert if assigned
+                assigneeId: Not(IsNull()),
             },
         });
 
