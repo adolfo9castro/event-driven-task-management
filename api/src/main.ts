@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/http-exception.filter';
 
 /**
  * Bootstraps the NestJS application with global configurations for:
@@ -32,6 +33,12 @@ async function bootstrap() {
     }),
   );
 
+  // Register the global exception filter
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  /**
+   * OpenAPI (Swagger) Configuration
+   */
   const config = new DocumentBuilder()
     .setTitle('Event-Driven Task Management API')
     .setDescription('The core API for managing tasks and triggering asynchronous background events.')
