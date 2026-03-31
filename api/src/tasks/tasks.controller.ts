@@ -14,7 +14,7 @@ export class TasksController {
     @ApiResponse({ status: 201, description: 'The task has been successfully created.' })
     @ApiResponse({ status: 400, description: 'Validation failed (Bad Request).' })
     create(@Body() createTaskDto: CreateTaskDto) {
-        return this.tasksService.create(createTaskDto);
+        return this.tasksService.createTask(createTaskDto);
     }
 
     @Get()

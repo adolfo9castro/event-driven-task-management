@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -11,6 +12,7 @@ import { TaskUpdatedEvent } from './events/task-updated.event';
 import { TaskDeletedEvent } from './events/task-deleted.event';
 import { TaskStatus } from './entities/task.entity';
 import { TaskReminderEvent } from './events/task-reminder.event';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * Core business logic layer for Task management.
@@ -20,12 +22,15 @@ import { TaskReminderEvent } from './events/task-reminder.event';
 @Injectable()
 export class TasksService {
     private readonly logger = new Logger(TasksService.name);
+    private eventBridge: EventBridgeClient;
 
     constructor(
         @InjectRepository(Task)
         private readonly taskRepository: Repository<Task>,
-        private readonly eventEmitter: EventEmitter2,
-    ) { }
+        private readonly configService: ConfigService
+    ) {
+        this.eventBridge = new EventBridgeClient({ region: configService.get('AWS_REGION') });
+    }
 
     /**
      * Persists a new task and dispatches a creation event.
@@ -33,16 +38,26 @@ export class TasksService {
      * @param createTaskDto - Validated payload for the new task.
      * @returns The newly persisted Task entity.
      */
-    async create(createTaskDto: CreateTaskDto): Promise<Task> {
+    async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
         const newTask = this.taskRepository.create(createTaskDto);
         const savedTask = await this.taskRepository.save(newTask);
 
         this.logger.log(`Task created successfully: ${savedTask.id}`);
 
-        this.eventEmitter.emit(
-            'task.created',
-            new TaskCreatedEvent(savedTask.id, savedTask.title),
-        );
+        await this.eventBridge.send(new PutEventsCommand({
+            Entries: [
+                {
+                    Source: 'com.ima.tasks', // Quién emite el evento
+                    DetailType: 'task.created', // El nombre del evento
+                    Detail: JSON.stringify(savedTask), // El payload (la tarea)
+                    EventBusName: 'default', // El bus de EventBridge
+                },
+            ],
+        })).then(() => {
+            this.logger.log(`[AWS EventBridge] Evento task.created enviado exitosamente.`);
+        }).catch((error) => {
+            this.logger.error(`[AWS Error] Fallo al enviar task.created a EventBridge:`, error);
+        });
 
         return savedTask;
     }
@@ -93,11 +108,20 @@ export class TasksService {
 
         this.logger.log(`Task updated successfully: ${id}`);
 
-        this.eventEmitter.emit(
-            'task.updated',
-            new TaskUpdatedEvent(result.id, result.status),
-        );
-
+        this.eventBridge.send(new PutEventsCommand({
+            Entries: [
+                {
+                    Source: 'com.ima.tasks',
+                    DetailType: 'task.updated',
+                    Detail: JSON.stringify(result),
+                    EventBusName: 'default',
+                },
+            ],
+        })).then(() => {
+            this.logger.log(`[AWS EventBridge] Evento task.updated enviado exitosamente.`);
+        }).catch((error) => {
+            this.logger.error(`[AWS Error] Fallo al enviar task.updated a EventBridge:`, error);
+        });
         return result;
     }
 
@@ -115,10 +139,20 @@ export class TasksService {
 
         this.logger.log(`Task soft-deleted successfully: ${id}`);
 
-        this.eventEmitter.emit(
-            'task.deleted',
-            new TaskDeletedEvent(id),
-        );
+        this.eventBridge.send(new PutEventsCommand({
+            Entries: [
+                {
+                    Source: 'com.ima.tasks',
+                    DetailType: 'task.deleted',
+                    Detail: JSON.stringify({ id, timestamp: new Date() }),
+                    EventBusName: 'default',
+                },
+            ],
+        })).then(() => {
+            this.logger.log(`[AWS EventBridge] Evento task.deleted enviado exitosamente.`);
+        }).catch((error) => {
+            this.logger.error(`[AWS Error] Fallo al enviar task.deleted a EventBridge:`, error);
+        });
     }
 
     /**
@@ -141,10 +175,20 @@ export class TasksService {
 
         for (const task of tasksDueSoon) {
             if (task.assigneeId) {
-                this.eventEmitter.emit(
-                    'task.reminder',
-                    new TaskReminderEvent(task.id, task.assigneeId, task.title, task.dueDate),
-                );
+                this.eventBridge.send(new PutEventsCommand({
+                    Entries: [
+                        {
+                            Source: 'com.ima.tasks',
+                            DetailType: 'task.reminder',
+                            Detail: JSON.stringify({ id: task.id, assigneeId: task.assigneeId, title: task.title, dueDate: task.dueDate }),
+                            EventBusName: 'default',
+                        },
+                    ],
+                })).then(() => {
+                    this.logger.log(`[AWS EventBridge] Evento task.reminder enviado exitosamente.`);
+                }).catch((error) => {
+                    this.logger.error(`[AWS Error] Fallo al enviar task.reminder a EventBridge:`, error);
+                });
             }
         }
 
