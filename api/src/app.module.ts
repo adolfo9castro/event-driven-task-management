@@ -24,7 +24,7 @@ import { TasksModule } from './tasks/tasks.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         entities: [Task],
-        synchronize: true, // Only for development/assessment purposes
+        synchronize: false, // Only for development/assessment purposes
         logging: configService.get('NODE_ENV') === 'development',
         logger: 'advanced-console',
       }),
