@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { LessThanOrEqual, Not } from 'typeorm';
+import { Between, Not } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -134,17 +134,36 @@ export class TasksService {
         const tasksDueSoon = await this.taskRepository.find({
             where: {
                 status: Not(TaskStatus.COMPLETED),
-                dueDate: LessThanOrEqual(tomorrow),
+                dueDate: Between(now, tomorrow), // Fix: Only future tasks within 24h
                 assigneeId: Not(IsNull()),
+                reminderSent: false,
             },
+            // Fix: Batching to prevent memory overflow in production
+            take: 1000,
         });
 
+        if (tasksDueSoon.length === 0) {
+            this.logger.log('No pending reminders to dispatch.');
+            return { triggeredCount: 0 };
+        }
+
+        let dispatchedCount = 0;
+
         for (const task of tasksDueSoon) {
-            if (task.assigneeId) {
+            try {
+                // In AWS this would be EventBridge putEvents
                 this.eventEmitter.emit(
                     'task.reminder',
                     new TaskReminderEvent(task.id, task.assigneeId, task.title, task.dueDate),
                 );
+
+                // 3. Mark as sent so we don't spam the user on the next cron execution
+                await this.taskRepository.update(task.id, { reminderSent: true });
+                dispatchedCount++;
+
+            } catch (error) {
+                // If one event fails to emit, log it but don't crash the entire batch
+                this.logger.error(`Failed to dispatch reminder for task ${task.id}`, error);
             }
         }
 
