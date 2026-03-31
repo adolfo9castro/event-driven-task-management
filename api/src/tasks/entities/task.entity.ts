@@ -40,15 +40,18 @@ export class Task {
     status: TaskStatus;
 
     /** Expected completion timestamp */
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ name: 'due_date', type: 'timestamp', nullable: true })
     dueDate: Date;
 
+    @Column({ name: 'reminder_sent', type: 'boolean', default: false })
+    reminderSent: boolean;
+
     /** UUID of the user who created the task */
-    @Column({ type: 'uuid' })
+    @Column({ name: 'creator_id', type: 'uuid' })
     creatorId: string;
 
     /** UUID of the user assigned to complete the task */
-    @Column({ type: 'uuid', nullable: true })
+    @Column({ name: 'assignee_id', type: 'uuid', nullable: true })
     assigneeId: string;
 
     /** Audit: Timestamp of record creation */

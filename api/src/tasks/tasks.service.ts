@@ -1,9 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { LessThanOrEqual, Not } from 'typeorm';
+import { Between, IsNull, Repository, Not } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -50,7 +48,7 @@ export class TasksService {
                     Source: 'com.ima.tasks', // Quién emite el evento
                     DetailType: 'task.created', // El nombre del evento
                     Detail: JSON.stringify(savedTask), // El payload (la tarea)
-                    EventBusName: 'default', // El bus de EventBridge
+                    EventBusName: 'ima-task-events', // El bus de EventBridge
                 },
             ],
         })).then(() => {
@@ -114,7 +112,7 @@ export class TasksService {
                     Source: 'com.ima.tasks',
                     DetailType: 'task.updated',
                     Detail: JSON.stringify(result),
-                    EventBusName: 'default',
+                    EventBusName: 'ima-task-events',
                 },
             ],
         })).then(() => {
@@ -145,7 +143,7 @@ export class TasksService {
                     Source: 'com.ima.tasks',
                     DetailType: 'task.deleted',
                     Detail: JSON.stringify({ id, timestamp: new Date() }),
-                    EventBusName: 'default',
+                    EventBusName: 'ima-task-events',
                 },
             ],
         })).then(() => {
@@ -168,29 +166,34 @@ export class TasksService {
         const tasksDueSoon = await this.taskRepository.find({
             where: {
                 status: Not(TaskStatus.COMPLETED),
-                dueDate: LessThanOrEqual(tomorrow),
+                dueDate: Between(now, tomorrow),
                 assigneeId: Not(IsNull()),
+                reminderSent: false, // Assuming we have a flag to prevent duplicate reminders
             },
         });
 
-        for (const task of tasksDueSoon) {
-            if (task.assigneeId) {
-                this.eventBridge.send(new PutEventsCommand({
-                    Entries: [
-                        {
-                            Source: 'com.ima.tasks',
-                            DetailType: 'task.reminder',
-                            Detail: JSON.stringify({ id: task.id, assigneeId: task.assigneeId, title: task.title, dueDate: task.dueDate }),
-                            EventBusName: 'default',
-                        },
-                    ],
-                })).then(() => {
-                    this.logger.log(`[AWS EventBridge] Evento task.reminder enviado exitosamente.`);
-                }).catch((error) => {
-                    this.logger.error(`[AWS Error] Fallo al enviar task.reminder a EventBridge:`, error);
-                });
-            }
+        if (tasksDueSoon.length === 0) {
+            this.logger.log('No tasks due within the next 24 hours to trigger reminders for.');
+            return { triggeredCount: 0 };
         }
+
+        tasksDueSoon.forEach(task => {
+            this.eventBridge.send(new PutEventsCommand({
+                Entries: [
+                    {
+                        Source: 'com.ima.tasks',
+                        DetailType: 'task.reminder',
+                        Detail: JSON.stringify({ id: task.id, assigneeId: task.assigneeId, title: task.title, dueDate: task.dueDate }),
+                        EventBusName: 'ima-task-events',
+                    },
+                ],
+            })).then(() => {
+                this.logger.log(`[AWS EventBridge] Evento task.reminder enviado exitosamente.`);
+            }).catch((error) => {
+                this.logger.error(`[AWS Error] Fallo al enviar task.reminder a EventBridge:`, error);
+            });
+
+        });
 
         this.logger.log(`Dispatched ${tasksDueSoon.length} task reminders.`);
         return { triggeredCount: tasksDueSoon.length };
