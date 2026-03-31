@@ -52,9 +52,9 @@ export class TasksService {
                 },
             ],
         })).then(() => {
-            this.logger.log(`[AWS EventBridge] Evento task.created enviado exitosamente.`);
+            this.logger.log(`[AWS EventBridge] Evento task.created sent successfully.`);
         }).catch((error) => {
-            this.logger.error(`[AWS Error] Fallo al enviar task.created a EventBridge:`, error);
+            this.logger.error(`[AWS Error] Failed to send task.created to EventBridge:`, error);
         });
 
         return savedTask;
@@ -116,9 +116,9 @@ export class TasksService {
                 },
             ],
         })).then(() => {
-            this.logger.log(`[AWS EventBridge] Evento task.updated enviado exitosamente.`);
+            this.logger.log(`[AWS EventBridge] Evento task.updated sent successfully.`);
         }).catch((error) => {
-            this.logger.error(`[AWS Error] Fallo al enviar task.updated a EventBridge:`, error);
+            this.logger.error(`[AWS Error] Failed to send task.updated to EventBridge:`, error);
         });
         return result;
     }
@@ -147,9 +147,9 @@ export class TasksService {
                 },
             ],
         })).then(() => {
-            this.logger.log(`[AWS EventBridge] Evento task.deleted enviado exitosamente.`);
+            this.logger.log(`[AWS EventBridge] Event task.deleted sent successfully.`);
         }).catch((error) => {
-            this.logger.error(`[AWS Error] Fallo al enviar task.deleted a EventBridge:`, error);
+            this.logger.error(`[AWS Error] Failed to send task.deleted to EventBridge:`, error);
         });
     }
 
@@ -188,9 +188,9 @@ export class TasksService {
                     },
                 ],
             })).then(() => {
-                this.logger.log(`[AWS EventBridge] Evento task.reminder enviado exitosamente.`);
+                this.logger.log(`[AWS EventBridge] Event task.reminder sent successfully.`);
             }).catch((error) => {
-                this.logger.error(`[AWS Error] Fallo al enviar task.reminder a EventBridge:`, error);
+                this.logger.error(`[AWS Error] Failed to send task.reminder to EventBridge:`, error);
             });
 
         });

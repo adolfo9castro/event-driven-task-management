@@ -2,12 +2,13 @@
 
 A NestJS + React task management system built for a Senior Full-Stack assessment.
 Implements an event-driven architecture using NestJS `EventEmitter2` as an
-in-process event bus locally, designed to map directly to AWS EventBridge in production.
+in-process event bus locally, and **is fully provisioned for production on AWS using Infrastructure as Code (AWS CDK)**.
 
 ## Part 1: Architecture & System Design
 
 ### 1. High-Level AWS Architecture
 
+- **Infrastructure as Code:** **AWS CDK**. The entire architecture below is defined in TypeScript and deployed automatically.
 - **API / Compute:** **AWS ECS (Fargate)** running stateless Node.js containers.
 - **Database:** **Amazon RDS (MySQL)**. Selected for strict relational integrity
   between tasks and users, and for its native support for soft deletes via
@@ -20,6 +21,7 @@ in-process event bus locally, designed to map directly to AWS EventBridge in pro
   buffer to absorb traffic spikes and provides at-least-once delivery guarantees.
 - **Scheduler Job:** **Amazon EventBridge Scheduler** triggers the reminder
   endpoint on a configurable cron expression (e.g., every hour).
+
 ```mermaid
 graph TD
     Client([Client / Frontend]) -->|HTTP REST| API[AWS ECS Fargate: NestJS API]
@@ -128,7 +130,7 @@ docker compose logs -f task-api
 ```
 
 You will see structured output like:
-```
+```text
 [TasksService] Task created successfully: <uuid>
 [MockEmailService] [EMAIL SENT] To Assignee <uuid>: You have been assigned to task "..."
 ```
@@ -151,7 +153,7 @@ curl -X POST http://localhost:3000/api/v1/tasks/reminders/trigger
 ```
 
 **Expected log output:**
-```
+```text
 [TasksService] Dispatched N task reminders.
 [MockEmailService] [EMAIL SENT] REMINDER for Assignee <uuid>: Task "..." is due soon!
 ```
