@@ -5,11 +5,7 @@ import { Between, IsNull, Repository, Not } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { TaskCreatedEvent } from './events/task-created.event';
-import { TaskUpdatedEvent } from './events/task-updated.event';
-import { TaskDeletedEvent } from './events/task-deleted.event';
 import { TaskStatus } from './entities/task.entity';
-import { TaskReminderEvent } from './events/task-reminder.event';
 import { ConfigService } from '@nestjs/config';
 
 /**
@@ -52,7 +48,7 @@ export class TasksService {
                 },
             ],
         })).then(() => {
-            this.logger.log(`[AWS EventBridge] Evento task.created sent successfully.`);
+            this.logger.log(`[AWS EventBridge] Event task.created sent successfully.`);
         }).catch((error) => {
             this.logger.error(`[AWS Error] Failed to send task.created to EventBridge:`, error);
         });
@@ -131,7 +127,7 @@ export class TasksService {
      * @throws NotFoundException if the task does not exist.
      */
     async remove(id: string): Promise<void> {
-        await this.findOne(id);
+        const task = await this.findOne(id);
 
         await this.taskRepository.softDelete(id);
 
@@ -142,7 +138,11 @@ export class TasksService {
                 {
                     Source: 'com.ima.tasks',
                     DetailType: 'task.deleted',
-                    Detail: JSON.stringify({ id, timestamp: new Date() }),
+                    Detail: JSON.stringify({
+                        id: task.id,
+                        title: task.title,
+                        timestamp: new Date()
+                    }),
                     EventBusName: 'ima-task-events',
                 },
             ],
@@ -176,8 +176,8 @@ export class TasksService {
             this.logger.log('No tasks due within the next 24 hours to trigger reminders for.');
             return { triggeredCount: 0 };
         }
-
-        tasksDueSoon.forEach(task => {
+        for (const task of tasksDueSoon) {
+            this.logger.debug(`Task "${task.id}" is due soon (due: ${task.dueDate.toISOString()}). Preparing to send reminder.`);
             this.eventBridge.send(new PutEventsCommand({
                 Entries: [
                     {
@@ -188,12 +188,11 @@ export class TasksService {
                     },
                 ],
             })).then(() => {
-                this.logger.log(`[AWS EventBridge] Event task.reminder sent successfully.`);
+                this.logger.log(`[AWS EventBridge] Reminder event for task "${task.id}" sent successfully.`);
             }).catch((error) => {
                 this.logger.error(`[AWS Error] Failed to send task.reminder to EventBridge:`, error);
             });
-
-        });
+        }
 
         this.logger.log(`Dispatched ${tasksDueSoon.length} task reminders.`);
         return { triggeredCount: tasksDueSoon.length };

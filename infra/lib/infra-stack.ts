@@ -55,19 +55,24 @@ export class InfraStack extends cdk.Stack {
           const eventHandlers = {
             "task.created": (detail) => {
               console.log("[EMAIL SENT] -> WELCOME! You have been assigned to a new task: " + detail.title);
-              // AWS SES logic would go here
+              // TODO: AWS SES logic would go here
             },
             "task.updated": (detail) => {
               console.log("[EMAIL SENT] -> UPDATE: The task '" + detail.title + "' has been modified.");
+              // TODO: AWS SES logic would go here
             },
             "task.deleted": (detail) => {
               console.log("[EMAIL SENT] -> ALERT: The task '" + detail.title + "' was deleted.");
+              // TODO: AWS SES logic would go here
+
             },
             "task.reminder": (detail) => {
               console.log("[EMAIL SENT] -> URGENT REMINDER: Task '" + detail.title + "' is due very soon!");
+              // TODO: AWS SES logic would go here
             },
             "default": (type) => {
               console.log("[WARNING] -> Received an unknown event type: " + type);
+              // TODO: AWS SES logic would go here
             }
           };
 
