@@ -2,8 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/http-exception.filter';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 /**
  * Bootstraps the NestJS application with global configurations for:
@@ -16,8 +18,36 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
+  //Define security headers using Helmet middleware for enhanced security
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https://validator.swagger.io'],
+        upgradeInsecureRequests: [],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    frameguard: {
+      action: 'deny',
+    },
+    hidePoweredBy: true,
+    noSniff: true,
+  }));
+
   // Define global prefix for API versioning as per REST best practices
   app.setGlobalPrefix('api/v1');
+
+  //Define cookie parser middleware to handle cookies in requests and responses.
+  app.use(cookieParser());
 
   // Enable CORS for frontend integration (Web/Client)
   app.enableCors({

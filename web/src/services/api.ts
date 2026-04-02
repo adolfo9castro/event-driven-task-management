@@ -1,4 +1,4 @@
-import type { Task, CreateTaskPayload } from '../types/task';
+import type { Task, CreateTaskPayload, PaginatedTasks } from '../types/task';
 
 /**
  * The base URL for the Tasks API, sourced from environment variables.
@@ -16,9 +16,9 @@ export const TaskService = {
      * * @returns A promise that resolves to an array of Task objects.
      * @throws Error if the network response is not successful.
      */
-    async getTasks(): Promise<Task[]> {
-        const response = await fetch(`${API_BASE_URL}/tasks`);
-        if (!response.ok) throw new Error('Could not retrieve tasks from the server.');
+    async getTasks(page: number = 1, limit: number = 10): Promise<PaginatedTasks> {
+        const response = await fetch(`${API_BASE_URL}/tasks?page=${page}&limit=${limit}`);
+        if (!response.ok) throw new Error('Could not retrieve tasks.');
         return response.json();
     },
 
@@ -31,7 +31,10 @@ export const TaskService = {
     async createTask(payload: CreateTaskPayload): Promise<Task> {
         const response = await fetch(`${API_BASE_URL}/tasks`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Idempotency-Key': crypto.randomUUID(),
+            },
             body: JSON.stringify(payload),
         });
 
@@ -70,5 +73,18 @@ export const TaskService = {
         });
 
         if (!response.ok) throw new Error('Failed to delete the task.');
-    }
+    },
+
+    /**
+     * triggers reminder events for tasks that are due within the next 24 hours.
+     * @returns An object containing the count of triggered reminders.
+     * @throws Error if the reminder trigger request fails.
+     */
+    async triggerReminders(): Promise<{ triggeredCount: number }> {
+        const response = await fetch(`${API_BASE_URL}/tasks/reminders/trigger`, {
+            method: 'POST',
+        });
+        if (!response.ok) throw new Error('Failed to trigger reminders.');
+        return response.json();
+    },
 };

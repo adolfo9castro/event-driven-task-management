@@ -18,6 +18,15 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: sync
+          path: ./api
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./api/package.json
     container_name: task_api
     env_file:
       - .env

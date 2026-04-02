@@ -11,6 +11,7 @@ import { TaskUpdatedEvent } from './events/task-updated.event';
 import { TaskDeletedEvent } from './events/task-deleted.event';
 import { TaskStatus } from './entities/task.entity';
 import { TaskReminderEvent } from './events/task-reminder.event';
+import { PaginatedResult } from '@/common/interfaces/paginated-result.interface';
 
 /**
  * Core business logic layer for Task management.
@@ -52,11 +53,20 @@ export class TasksService {
      *
      * @returns An array of active Task entities ordered by creation date.
      */
-    async findAll(): Promise<Task[]> {
+    async findAll(page: number = 1, limit: number = 10): Promise<PaginatedResult<Task>> {
         this.logger.debug('Fetching all active tasks');
-        return this.taskRepository.find({
+        const [items, total] = await this.taskRepository.findAndCount({
+            take: limit, // Toma N elementos
+            skip: (page - 1) * limit, // Salta los anteriores
             order: { createdAt: 'DESC' },
         });
+
+        return {
+            items,
+            total,
+            page,
+            lastPage: Math.ceil(total / limit) || 1,
+        };
     }
 
     /**

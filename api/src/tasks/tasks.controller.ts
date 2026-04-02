@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -62,5 +63,17 @@ export class TasksController {
     @ApiResponse({ status: 200, description: 'Reminders successfully dispatched.' })
     triggerReminders() {
         return this.tasksService.triggerReminders();
+    }
+
+    @Get('set-preferences')
+    setPreferences(@Res({ passthrough: true }) res: Response) {
+        // Configuración estricta de cookies sin dependencias extra
+        res.cookie('theme', 'dark', {
+            httpOnly: true, // Inaccesible vía document.cookie (Previene XSS)
+            secure: process.env.NODE_ENV === 'production', // Solo HTTPS en prod
+            sameSite: 'strict', // Previene CSRF
+            maxAge: 1000 * 60 * 60 * 24, // 1 día
+        });
+        return { message: 'Preferences saved securely' };
     }
 }

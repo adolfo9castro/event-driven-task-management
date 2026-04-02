@@ -1,6 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DeviceFingerprintMiddleware } from './common/middlewares/device-fingerprint.middleware';
+import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Task } from './tasks/entities/task.entity';
@@ -25,7 +27,7 @@ import { TasksModule } from './tasks/tasks.module';
         database: configService.get<string>('DB_NAME'),
         entities: [Task],
         synchronize: true, // Only for development/assessment purposes
-        logging: configService.get('NODE_ENV') === 'development',
+        logging: configService.get('NODE_ENV') === 'development' || configService.get('NODE_ENV') === 'local',
         logger: 'advanced-console',
       }),
     }),
@@ -39,4 +41,10 @@ import { TasksModule } from './tasks/tasks.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(DeviceFingerprintMiddleware, RateLimitMiddleware)
+      .forRoutes('*');
+  }
+}
